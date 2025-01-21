@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IP Lookup Tool</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      color: #333;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #007bff;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 10px;
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .error {
+      color: red;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>IP Lookup Tool</h1>
+    <p>Masukkan IP Address atau Domain untuk mencari informasi.</p>
+
+    <input type="text" id="query" placeholder="Contoh: 8.8.8.8 atau google.com">
+    <button onclick="lookupIP()">Cari</button>
+
+    <div id="result" class="result" style="display: none;"></div>
+    <div id="error" class="error"></div>
+  </div>
+
+  <script>
+    async function lookupIP() {
+      const query = document.getElementById('query').value.trim();
+      const resultDiv = document.getElementById('result');
+      const errorDiv = document.getElementById('error');
+
+      resultDiv.style.display = 'none';
+      resultDiv.innerHTML = '';
+      errorDiv.textContent = '';
+
+      if (!query) {
+        errorDiv.textContent = 'Harap masukkan IP Address atau Domain.';
+        return;
+      }
+
+      try {
+        const response = await axios.get(`https://ipinfo.io/${query}?token=7c16ee6f3aa630`);
+        const data = response.data;
+
+        const html = `
+          <p><strong>IP Address:</strong> ${data.ip || 'Not available'}</p>
+          <p><strong>Country:</strong> ${data.country || 'Not available'}</p>
+          <p><strong>Region:</strong> ${data.region || 'Not available'}</p>
+          <p><strong>City:</strong> ${data.city || 'Not available'}</p>
+          <p><strong>ISP:</strong> ${data.org || 'Not available'}</p>
+          <p><strong>Latitude:</strong> ${data.loc ? data.loc.split(',')[0] : 'Not available'}</p>
+          <p><strong>Longitude:</strong> ${data.loc ? data.loc.split(',')[1] : 'Not available'}</p>
+        `;
+
+        resultDiv.innerHTML = html;
+        resultDiv.style.display = 'block';
+      } catch (error) {
+        console.error(error);
+        errorDiv.textContent = 'Gagal mendapatkan informasi. Periksa kembali IP/Domain atau coba lagi nanti.';
+      }
+    }
+  </script>
+</body>
+</html>
