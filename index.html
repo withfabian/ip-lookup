@@ -64,9 +64,9 @@
 <body>
   <div class="container">
     <h1>IP Lookup Tool</h1>
-    <p>Masukkan IP Address atau Domain untuk mencari informasi.</p>
+    <p>Masukkan IP Address, Domain, atau Link untuk mencari informasi.</p>
 
-    <input type="text" id="query" placeholder="Contoh: 8.8.8.8 atau google.com">
+    <input type="text" id="query" placeholder="Contoh: 8.8.8.8, google.com, atau https://example.com">
     <button onclick="lookupIP()">Cari</button>
 
     <div id="result" class="result" style="display: none;"></div>
@@ -84,21 +84,20 @@
       errorDiv.textContent = '';
 
       if (!query) {
-        errorDiv.textContent = 'Harap masukkan IP Address atau Domain.';
+        errorDiv.textContent = 'Harap masukkan IP Address, Domain, atau Link.';
+        return;
+      }
+
+      // Proses input untuk mendukung domain atau link
+      const processedQuery = processQuery(query);
+
+      if (!processedQuery) {
+        errorDiv.textContent = 'Format input salah. Harap masukkan IP Address, Domain, atau Link yang valid.';
         return;
       }
 
       try {
-        // Jika input adalah domain, tambahkan validasi
-        const domainPattern = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        if (domainPattern.test(query)) {
-          console.log("Query berupa domain, melanjutkan proses...");
-        } else if (!isValidIP(query)) {
-          errorDiv.textContent = 'Format input salah. Harap masukkan IP Address atau Domain yang valid.';
-          return;
-        }
-
-        const response = await axios.get(`https://ipinfo.io/${query}?token=7c16ee6f3aa630`);
+        const response = await axios.get(`https://ipinfo.io/${processedQuery}?token=7c16ee6f3aa630`);
         const data = response.data;
 
         const html = `
@@ -115,14 +114,26 @@
         resultDiv.style.display = 'block';
       } catch (error) {
         console.error(error);
-        errorDiv.textContent = 'Gagal mendapatkan informasi. Periksa kembali IP/Domain atau coba lagi nanti.';
+        errorDiv.textContent = 'Gagal mendapatkan informasi. Periksa kembali IP/Domain/Link atau coba lagi nanti.';
       }
     }
 
-    function isValidIP(ip) {
-      const ipPattern = /^(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)$/;
-      const ipv6Pattern = /^([a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}$/;
-      return ipPattern.test(ip) || ipv6Pattern.test(ip);
+    function processQuery(input) {
+      try {
+        // Jika input berupa URL, ambil hostname-nya saja
+        const url = new URL(input);
+        return url.hostname;
+      } catch (e) {
+        // Jika bukan URL, cek apakah input adalah domain atau IP
+        const domainPattern = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        const ipPattern = /^(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)$/;
+        const ipv6Pattern = /^([a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}$/;
+
+        if (domainPattern.test(input) || ipPattern.test(input) || ipv6Pattern.test(input)) {
+          return input;
+        }
+        return null; // Format tidak valid
+      }
     }
   </script>
 </body>
