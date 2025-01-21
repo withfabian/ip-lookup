@@ -64,9 +64,9 @@
 <body>
   <div class="container">
     <h1>IP Lookup Tool</h1>
-    <p>Masukkan IP Address atau Domain untuk mencari informasi.</p>
+    <p>Masukkan IP Address, Domain, atau Link untuk mencari informasi.</p>
 
-    <input type="text" id="query" placeholder="Contoh: 8.8.8.8">
+    <input type="text" id="query" placeholder="Contoh: 8.8.8.8, google.com, atau https://example.com">
     <button onclick="lookupIP()">Cari</button>
 
     <div id="result" class="result" style="display: none;"></div>
@@ -84,12 +84,16 @@
       errorDiv.textContent = '';
 
       if (!query) {
-        errorDiv.textContent = 'Harap masukkan IP Address atau Domain.';
+        errorDiv.textContent = 'Harap masukkan IP Address, Domain, atau Link.';
         return;
       }
 
       try {
-        const response = await axios.get(`https://ipinfo.io/${query}?token=7c16ee6f3aa630`);
+        // Langkah 1: Proses input untuk mendapatkan IP jika berupa domain atau URL
+        const ipOrDomain = await resolveDomainToIP(query);
+
+        // Langkah 2: Kirim permintaan ke API ipinfo.io
+        const response = await axios.get(`https://ipinfo.io/${ipOrDomain}?token=7c16ee6f3aa630`);
         const data = response.data;
 
         const html = `
@@ -106,7 +110,34 @@
         resultDiv.style.display = 'block';
       } catch (error) {
         console.error(error);
-        errorDiv.textContent = 'Gagal mendapatkan informasi. Periksa kembali IP/Domain atau coba lagi nanti.';
+        errorDiv.textContent = 'Gagal mendapatkan informasi. Periksa kembali IP/Domain/Link atau coba lagi nanti.';
+      }
+    }
+
+    async function resolveDomainToIP(input) {
+      try {
+        // Jika input berupa URL, ambil hostname
+        const url = new URL(input);
+        input = url.hostname;
+      } catch (e) {
+        // Bukan URL, lanjutkan
+      }
+
+      // Periksa apakah input adalah IP
+      const ipPattern = /^(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)$/;
+      const ipv6Pattern = /^([a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}$/;
+
+      if (ipPattern.test(input) || ipv6Pattern.test(input)) {
+        return input; // Input sudah berupa IP
+      }
+
+      // Jika bukan IP, asumsikan input adalah domain
+      const dnsResponse = await axios.get(`https://dns.google/resolve?name=${input}`);
+      if (dnsResponse.data && dnsResponse.data.Answer && dnsResponse.data.Answer.length > 0) {
+        // Ambil IP dari jawaban pertama DNS
+        return dnsResponse.data.Answer[0].data;
+      } else {
+        throw new Error('Tidak dapat menemukan IP untuk domain.');
       }
     }
   </script>
